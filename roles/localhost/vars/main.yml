@@ -1,0 +1,35 @@
+---
+# vars file for local
+  packages:
+  - git
+  - vim
+  - emacs
+  - mercurial
+  - zsh
+  - curl
+  - nodejs
+  - neovim
+  - tmux
+  - python3
+  - python3-pip
+  - python-virtualenv
+  - gunicorn
+  - mutt
+  - build-essential
+  - cmake
+  - python3-dev
+  - python-pip
+  - flake8
+  - webp
+  - ruby
+  - software-properties-common
+  - rvm
+  - openshot
+  - pandoc
+  - apt-transport-https
+  - ca-certificates
+  - gnupg-agent
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - emma

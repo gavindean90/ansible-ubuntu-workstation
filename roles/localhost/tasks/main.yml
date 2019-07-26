@@ -1,0 +1,146 @@
+---
+- name: ensure group "wheel" exists
+  group:
+    name: wheel
+    state: present
+
+- name: ensure group "docker" exists
+  group:
+    name: docker
+    state: present
+
+- name: Add the user 'johnd' with a specific uid and a primary group of 'admin'
+  user:
+    name: gjd
+    comment: This is me
+    group: wheel
+    groups: wheel,gjd,docker
+    shell: /bin/zsh
+
+- name: ensure nodejs repo is there
+  shell: "curl -sL https://deb.nodesource.com/setup_10.x | sudo bash -"
+
+- name: Add an Apt signing key, uses whichever key is at the URL
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
+    state: present
+
+- name: ensure rvm repo is there
+  apt_repository:
+    repo:  ppa:rael-gc/rvm
+    state: present
+    # install rvm https://rvm.io/
+
+- name: Install a list of packages
+  apt:
+    name: "{{ packages }}"
+    update_cache: yes
+
+- name: Cloning  oh-my-zsh
+  git:
+    repo=https://github.com/robbyrussell/oh-my-zsh
+    dest=~/.oh-my-zsh
+    update=no
+  register: cloning
+
+- name: Creating new ~/.zshrc
+  copy:
+    src=~/.oh-my-zsh/templates/zshrc.zsh-template
+    dest=~/.zshrc
+  when: cloning
+
+# Added repo outside of ansible with curl -sL https://deb.nodesource.com/setup_10.x | sudo bash -
+
+- lineinfile:
+    path: /etc/sudoers
+    state: present
+    regexp: '^%wheel\s'
+    line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+
+- name: neovim config dir
+  file:
+    path: /home/gjd/.config/nvim
+    state: directory
+    mode: 0755
+    owner: gjd
+    group: gjd
+
+- name: neovim config file
+  template:
+    src: templates/init.vim.j2
+    dest: /home/gjd/.config/nvim/init.vim
+    mode: 0644
+    owner: gjd
+    group: gjd
+
+- name: vimrc soft link to neovim config file
+  file:
+    src: /home/gjd/.config/nvim/init.vim
+    dest: /home/gjd/.vimrc
+    state: touch
+    mode: 0644
+
+- name: vim-plug path exists
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+    owner: gjd
+    group: gjd
+  with_items:
+    - /home/gjd/.local
+    - /home/gjd/.local/share
+    - /home/gjd/.local/share/nvim
+    - /home/gjd/.local/share/nvim/site
+    - /home/gjd/.local/share/nvim/site/autoload
+
+- name: Download vim plug
+  get_url:
+    url: https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+    dest: /home/gjd/.local/share/nvim/site/autoload/plug.vim
+    mode: 0644
+    owner: gjd
+    group: gjd
+
+- name: configure emacs
+  copy:
+    src: files/.emacs
+    dest: /home/gjd/.emacs
+    owner: gjd
+    group: gjd
+
+- name: place tmux.conf
+  copy:
+    src: files/tmux.conf
+    dest: /home/gjd/.tmux.conf
+
+- name: create tmux plugin file
+  file:
+    path: /home/gjd/.tmux
+    state: directory
+    owner: gjd
+    group: gjd
+
+- name: install tmux plugin manager
+  git:
+    repo: 'https://github.com/tmux-plugins/tpm.git'
+    dest: /home/gjd/.tmux/plugins/tpm
+  become: true
+  become_user: gjd
+
+- name: User bin dir
+  file:
+    path: /home/gjd/bin
+    state: directory
+    owner: gjd
+    group: gjd
+
+- name: start and enable docker
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
