@@ -1,0 +1,7 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Gavins awesome playbook
+  hosts: all
+  become: True
+  roles:
+    - local
